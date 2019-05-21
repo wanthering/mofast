@@ -8,10 +8,13 @@ import transformer from 'jstransformer'
 import minimatch from 'minimatch'
 import { transform as babelTransform } from 'buble'
 
+import Wares from './wares'
+
 class Mofast extends EventEmitter {
   constructor () {
     super()
     this.files = {}
+    this.meta = {}
     this.middlewares = []
   }
 
@@ -61,9 +64,10 @@ class Mofast extends EventEmitter {
       })
     )
 
-    for (let middleware of this.middlewares) {
-      await middleware(this)
-    }
+    await new Wares().use(this.middlewares).run(this)
+    // for (let middleware of this.middlewares) {
+    //   await middleware(this)
+    // }
     return this
   }
 
@@ -78,6 +82,9 @@ class Mofast extends EventEmitter {
     const supportedEngines = ['handlebars', 'ejs']
     assert(typeof (type) === 'string' && supportedEngines.includes(type), `engine must be value of ${supportedEngines.join(',')}`)
     const Transform = transformer(require(`jstransformer-${type}`))
+
+    locals = typeof locals === 'function'? locals(this):locals
+
     const middleware = ({ files }) => {
       for (let filename in files) {
         if (pattern && !minimatch(filename, pattern)) continue
@@ -85,8 +92,8 @@ class Mofast extends EventEmitter {
         files[filename].contents = Buffer.from(Transform.render(content, locals).body)
       }
     }
-    this.middlewares.push(middleware)
-    return this
+    // this.middlewares.push(middleware)
+    return this.use(middleware)
   }
 
   /**
@@ -103,8 +110,8 @@ class Mofast extends EventEmitter {
         files[filename].contents = Buffer.from(babelTransform(content).code)
       }
     }
-    this.middlewares.push(middleware)
-    return this
+    // this.middlewares.push(middleware)
+    return this.use(middleware)
   }
 
   /**
@@ -120,8 +127,8 @@ class Mofast extends EventEmitter {
         }
       }
     }
-    this.middlewares.push(middleware)
-    return this
+    // this.middlewares.push(middleware)
+    return this.use(middleware)
   }
 
   /**
@@ -150,6 +157,7 @@ class Mofast extends EventEmitter {
         const { contents } = this.files[filename]
         const target = path.join(destPath, filename)
         this.emit('write', filename, target)
+        console.log('writing', filename, target)
         return fs.ensureDir(path.dirname(target))
           .then(() => fs.writeFile(target, contents))
       })

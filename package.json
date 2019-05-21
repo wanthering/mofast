@@ -1,7 +1,7 @@
 {
   "name": "mofast",
-  "version": "0.0.1",
-  "description": "my phenomenal project",
+  "version": "0.0.2",
+  "description": "精简、实用的前端构建工具",
   "scripts": {
     "build": "bili",
     "test": "jest",
