@@ -1,0 +1,46 @@
+{
+  "name": "mofast",
+  "version": "0.0.1",
+  "description": "my phenomenal project",
+  "scripts": {
+    "build": "bili",
+    "test": "jest",
+    "lint": "eslint src/**/*.js test/**/*.js --fix"
+  },
+  "main": "dist/index.js",
+  "files": ["dist"],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/wanthering/mofast.git"
+  },
+  "author": "wanthering",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/wanthering/mofast/issues"
+  },
+  "homepage": "https://github.com/wanthering/mofast#readme",
+  "devDependencies": {
+    "@babel/core": "^7.4.4",
+    "@babel/preset-env": "^7.4.4",
+    "babel-jest": "^24.8.0",
+    "bili": "^4.7.4",
+    "eslint": "^5.16.0",
+    "eslint-config-standard": "^12.0.0",
+    "eslint-plugin-import": "^2.17.2",
+    "eslint-plugin-jest": "^22.5.1",
+    "eslint-plugin-node": "^9.0.1",
+    "eslint-plugin-promise": "^4.1.1",
+    "eslint-plugin-standard": "^4.0.0",
+    "jest": "^24.8.0",
+    "memfs": "^2.15.2"
+  },
+  "dependencies": {
+    "buble": "^0.19.7",
+    "fast-glob": "^2.2.7",
+    "fs-extra": "^8.0.1",
+    "jstransformer": "^1.0.0",
+    "jstransformer-ejs": "^0.2.0",
+    "jstransformer-handlebars": "^1.1.0",
+    "minimatch": "^3.0.4"
+  }
+}
