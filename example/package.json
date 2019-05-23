@@ -1,6 +1,0 @@
-{
-  "dependencies": {
-    "inquirer": "^6.3.1",
-    "mofast": "0.0.2"
-  }
-}

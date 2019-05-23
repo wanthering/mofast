@@ -2,13 +2,10 @@ import { EventEmitter } from 'events'
 import glob from 'fast-glob'
 import path from 'path'
 import fs from 'fs-extra'
-
 import assert from 'assert'
 import transformer from 'jstransformer'
 import minimatch from 'minimatch'
 import { transform as babelTransform } from 'buble'
-
-import Wares from './wares'
 
 class Mofast extends EventEmitter {
   constructor () {
@@ -25,10 +22,9 @@ class Mofast extends EventEmitter {
    * @param dotFiles   是否识别隐藏文件
    * @returns this 返回this，提供链式操作
    */
-  source (patterns, { baseDir = '.', dotFiles = true } = {}) {
-    //
+  source (patterns, { baseDir, dotFiles = true } = {}) {
     this.sourcePatterns = patterns
-    this.baseDir = baseDir
+    this.baseDir = baseDir || extractCallDir()
     this.dotFiles = dotFiles
     return this
   }
@@ -53,6 +49,9 @@ class Mofast extends EventEmitter {
       dot: this.dotFiles,
       stats: true
     })
+    if (allStats.length === 0) {
+      throw new Error(`${this.baseDir}内搜寻不到所需的文件`)
+    }
 
     this.files = {}
     await Promise.all(
@@ -64,10 +63,9 @@ class Mofast extends EventEmitter {
       })
     )
 
-    await new Wares().use(this.middlewares).run(this)
-    // for (let middleware of this.middlewares) {
-    //   await middleware(this)
-    // }
+    for (let middleware of this.middlewares) {
+      await middleware(this)
+    }
     return this
   }
 
@@ -82,18 +80,19 @@ class Mofast extends EventEmitter {
     const supportedEngines = ['handlebars', 'ejs']
     assert(typeof (type) === 'string' && supportedEngines.includes(type), `engine must be value of ${supportedEngines.join(',')}`)
     const Transform = transformer(require(`jstransformer-${type}`))
+    locals = locals || {}
 
-    locals = typeof locals === 'function'? locals(this):locals
-
-    const middleware = ({ files }) => {
-      for (let filename in files) {
-        if (pattern && !minimatch(filename, pattern)) continue
-        const content = files[filename].contents.toString()
-        files[filename].contents = Buffer.from(Transform.render(content, locals).body)
+    const middleware = (context) => {
+      const files = context.files
+      locals = typeof locals === 'function' ? locals(context) : { ...locals, ...context.meta }
+      for (let filepath in files) {
+        if (pattern && !minimatch(filepath, pattern)) continue
+        const content = files[filepath].contents.toString()
+        files[filepath].contents = Buffer.from(Transform.render(content, locals).body)
       }
     }
-    // this.middlewares.push(middleware)
-    return this.use(middleware)
+    this.middlewares.push(middleware)
+    return this
   }
 
   /**
@@ -103,32 +102,37 @@ class Mofast extends EventEmitter {
    */
   babel (pattern) {
     pattern = pattern || '*.js?(x)'
-    const middleware = ({ files }) => {
-      for (let filename in files) {
-        if (pattern && !minimatch(filename, pattern)) continue
-        const content = files[filename].contents.toString()
-        files[filename].contents = Buffer.from(babelTransform(content).code)
+    const middleware = (context) => {
+      const files = context.files
+      for (let filepath in files) {
+        if (pattern && !minimatch(filepath, pattern)) continue
+        const content = files[filepath].contents.toString()
+        files[filepath].contents = Buffer.from(babelTransform(content).code)
       }
     }
-    // this.middlewares.push(middleware)
-    return this.use(middleware)
+    this.middlewares.push((context) => {
+      return middleware(context)
+    })
+    return this
   }
 
   /**
    * 过滤掉部分文件
-   * @param fn  鉴定filename是否需要过滤的函数
+   * @param handler  鉴定filename是否需要过滤的函数
    * @returns this 返回this，提供链式操作
    */
-  filter (fn) {
+  filter (handler) {
     const middleware = ({ files }) => {
-      for (let filenames in files) {
-        if (!fn(filenames, files[filenames])) {
-          delete files[filenames]
+      for (let filepath in files) {
+        if (!handler(filepath, files[filepath])) {
+          delete files[filepath]
         }
       }
     }
-    // this.middlewares.push(middleware)
-    return this.use(middleware)
+    this.middlewares.push((context) => {
+      return middleware(context)
+    })
+    return this
   }
 
   /**
@@ -153,11 +157,10 @@ class Mofast extends EventEmitter {
    */
   async writeFileTree (destPath) {
     await Promise.all(
-      Object.keys(this.files).map(filename => {
-        const { contents } = this.files[filename]
-        const target = path.join(destPath, filename)
-        this.emit('write', filename, target)
-        console.log('writing', filename, target)
+      Object.keys(this.files).map(filepath => {
+        const { contents } = this.files[filepath]
+        const target = path.join(destPath, filepath)
+        this.emit('write', filepath, target)
         return fs.ensureDir(path.dirname(target))
           .then(() => fs.writeFile(target, contents))
       })
@@ -210,6 +213,19 @@ class Mofast extends EventEmitter {
     return this
   }
 
+  rename (changer) {
+    const middleware = ({ files }) => {
+      assert(typeof changer === 'object', '输入的参数必须为对象')
+      for (let changerPath in changer) {
+        const cached = { ...files[changerPath] }
+        delete files[changerPath]
+        files[changer[changerPath]] = cached
+      }
+    }
+    this.middlewares.push(middleware)
+    return this
+  }
+
   /**
    * 新建文件
    * @param relativePath 文件相对路径
@@ -227,5 +243,14 @@ const mofast = () => new Mofast()
 mofast.fs = fs
 mofast.glob = glob
 mofast.minimatch = minimatch
+
+function extractCallDir () {
+  // extract api.render() callsite file location using error stack
+  const obj = {}
+  Error.captureStackTrace(obj)
+  const callSite = obj.stack.split('\n')[3]
+  const fileName = callSite.match(/\s\((.*):\d+:\d+\)$/)[1]
+  return path.dirname(fileName)
+}
 
 export default mofast

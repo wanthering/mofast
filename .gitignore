@@ -5,4 +5,5 @@ examples/package-lock.json
 *.log
 dist/
 output
-examples/*/yarn.lock
+examples/**/yarn.lock
+examples/**/package-lock.json

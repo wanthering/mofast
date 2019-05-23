@@ -1,14 +1,18 @@
 {
   "name": "mofast",
-  "version": "0.0.2",
+  "version": "0.0.4",
   "description": "精简、实用的前端构建工具",
   "scripts": {
     "build": "bili",
     "test": "jest",
     "lint": "eslint src/**/*.js test/**/*.js --fix"
   },
+  "bin": "./example/cli.js",
   "main": "dist/index.js",
-  "files": ["dist"],
+  "files": [
+    "dist",
+    "example"
+  ],
   "repository": {
     "type": "git",
     "url": "git+https://github.com/wanthering/mofast.git"
@@ -41,6 +45,7 @@
     "jstransformer": "^1.0.0",
     "jstransformer-ejs": "^0.2.0",
     "jstransformer-handlebars": "^1.1.0",
-    "minimatch": "^3.0.4"
+    "minimatch": "^3.0.4",
+    "cross-spawn": "latest"
   }
 }

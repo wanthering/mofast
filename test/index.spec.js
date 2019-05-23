@@ -73,3 +73,14 @@ test('filter', async () => {
   expect(stream.fileList).toContain('add.js')
   expect(stream.fileList).not.toContain('hbtmp.hbs')
 })
+
+test('rename', async () => {
+  const stream = mofast()
+  stream.source('**', { baseDir: templateDir })
+    .rename({ 'add.js': '_add.js' })
+
+  await stream.process()
+
+  expect(stream.fileList).not.toContain('add.js')
+  expect(stream.fileList).toContain('_add.js')
+})
