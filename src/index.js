@@ -161,8 +161,13 @@ class Mofast extends EventEmitter {
         const { contents } = this.files[filepath]
         const target = path.join(destPath, filepath)
         this.emit('write', filepath, target)
-        return fs.ensureDir(path.dirname(target))
-          .then(() => fs.writeFile(target, contents))
+        return (
+          /* TODO: JSFIX could not patch the breaking change:
+          Creating a directory with fs-extra no longer returns the path 
+          Suggested fix: The returned promise no longer includes the path of the new directory */
+          fs.ensureDir(path.dirname(target))
+            .then(() => fs.writeFile(target, contents))
+        )
       })
     )
   }

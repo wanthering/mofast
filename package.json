@@ -41,7 +41,7 @@
   "dependencies": {
     "buble": "^0.19.7",
     "fast-glob": "^2.2.7",
-    "fs-extra": "^8.0.1",
+    "fs-extra": "^9.0.0",
     "jstransformer": "^1.0.0",
     "jstransformer-ejs": "^0.2.0",
     "jstransformer-handlebars": "^1.1.0",
